@@ -80,6 +80,9 @@ parser.add_argument('--max_seq_len_delta', type=int, default=40,
                     help='max sequence length')
 parser.add_argument('--single_gpu', default=False, action='store_true', 
                     help='use single GPU')
+parser.add_argument('--test_outfile', help='file to write out per-token test likelihoods', default=None)
+parser.add_argument('--train_override', help='training file name override (otherwise uses train.txt)', default=None)
+# parser.add_argument('--test_only', action='store_true', help='specifies to not train, just load save file and test')
 args = parser.parse_args()
 
 if args.nhidlast < 0:
@@ -113,7 +116,7 @@ if torch.cuda.is_available():
 # Load data
 ###############################################################################
 
-corpus = data.Corpus(args.data)
+corpus = data.Corpus(args.data, args.train_override)
 
 eval_batch_size = 10
 test_batch_size = 1
@@ -151,12 +154,18 @@ criterion = nn.CrossEntropyLoss()
 # Training code
 ###############################################################################
 
-def evaluate(data_source, batch_size=10):
+def evaluate(data_source, batch_size=10, write_LL=False):
     # Turn on evaluation mode which disables dropout.
     model.eval()
     total_loss = 0
     ntokens = len(corpus.dictionary)
     hidden = model.init_hidden(batch_size)
+
+
+    f = None
+    if args.test_outfile and write_LL:
+        f = open(args.test_outfile, "w")
+
     with torch.no_grad():
         for i in range(0, data_source.size(0) - 1, args.bptt):
             data, targets = get_batch(data_source, i, args)
@@ -164,10 +173,14 @@ def evaluate(data_source, batch_size=10):
 
             log_prob, hidden = parallel_model(data, hidden)
             loss = nn.functional.nll_loss(log_prob.view(-1, log_prob.size(2)), targets).data
-
+            if f:
+                for (lps, target) in zip(log_prob.view(-1, log_prob.size(2)), targets):
+                    f.write(f"{lps[target].item()}\n")
             total_loss += loss * len(data)
 
             hidden = repackage_hidden(hidden)
+    if f:
+        f.close()
     return total_loss.item() / len(data_source)
 
 
@@ -305,10 +318,14 @@ except KeyboardInterrupt:
 
 # Load the best saved model.
 model = torch.load(os.path.join(args.save, 'model.pt'))
-parallel_model = nn.DataParallel(model, dim=1).cuda()
+
+if args.cuda:
+    parallel_model = nn.DataParallel(model, dim=1).cuda()
+else:
+    parallel_model = model
 
 # Run on test data.
-test_loss = evaluate(test_data, test_batch_size)
+test_loss = evaluate(test_data, test_batch_size, True)
 logging('=' * 89)
 logging('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
     test_loss, math.exp(test_loss)))
