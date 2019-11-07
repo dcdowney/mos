@@ -25,7 +25,7 @@ class Dictionary(object):
 
 
 class Corpus(object):
-    def __init__(self, path, train_override=None):
+    def __init__(self, path, train_override=None, vocab_extra=None):
         self.dictionary = Dictionary()
         if(train_override):
             self.train = self.tokenize(os.path.join(path, train_override))
@@ -33,6 +33,8 @@ class Corpus(object):
             self.train = self.tokenize(os.path.join(path, 'train.txt'))
         self.valid = self.tokenize(os.path.join(path, 'valid.txt'))
         self.test = self.tokenize(os.path.join(path, 'test.txt'))
+        if os.path.exists(os.path.join(path, 'extra_vocab.txt')):
+            self.tokenize(os.path.join(path, 'extra_vocab.txt')) #add extra vocab to dict
 
     def tokenize(self, path):
         """Tokenizes a text file."""
