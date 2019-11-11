@@ -82,6 +82,7 @@ parser.add_argument('--single_gpu', default=False, action='store_true',
                     help='use single GPU')
 parser.add_argument('--test_outfile', help='file to write out per-token test likelihoods', default=None)
 parser.add_argument('--train_override', help='training file name override (otherwise uses train.txt)', default=None)
+parser.add_argument('--fresh_optimization', action='store_true', help='resets the optimizer; only relevant with continue_train')
 # parser.add_argument('--test_only', action='store_true', help='specifies to not train, just load save file and test')
 args = parser.parse_args()
 
@@ -265,7 +266,8 @@ try:
             optimizer = torch.optim.ASGD(model.parameters(), lr=args.lr, t0=0, lambd=0., weight_decay=args.wdecay)
         else:
             optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.wdecay)
-        optimizer.load_state_dict(optimizer_state)
+        if not args.fresh_optimization:
+            optimizer.load_state_dict(optimizer_state)
     else:
         optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.wdecay)
 
