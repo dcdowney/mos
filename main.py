@@ -260,14 +260,12 @@ stored_loss = 100000000
 
 # At any point you can hit Ctrl + C to break out of training early.
 try:
-    if args.continue_train:
+    if args.continue_train and not args.fresh_optimization:
         optimizer_state = torch.load(os.path.join(args.save, 'optimizer.pt'))
         if 't0' in optimizer_state['param_groups'][0]:
             optimizer = torch.optim.ASGD(model.parameters(), lr=args.lr, t0=0, lambd=0., weight_decay=args.wdecay)
         else:
             optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.wdecay)
-        if not args.fresh_optimization:
-            optimizer.load_state_dict(optimizer_state)
     else:
         optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, weight_decay=args.wdecay)
 
