@@ -82,6 +82,7 @@ parser.add_argument('--single_gpu', default=False, action='store_true',
                     help='use single GPU')
 parser.add_argument('--test_outfile', help='file to write out per-token test likelihoods', default=None)
 parser.add_argument('--train_override', help='training file name override (otherwise uses train.txt)', default=None)
+parser.add_argument('--valid_override', help='valid file name override (otherwise uses valid.txt)', default=None)
 parser.add_argument('--fresh_optimization', action='store_true', help='resets the optimizer; only relevant with continue_train')
 # parser.add_argument('--test_only', action='store_true', help='specifies to not train, just load save file and test')
 args = parser.parse_args()
@@ -117,7 +118,7 @@ if torch.cuda.is_available():
 # Load data
 ###############################################################################
 
-corpus = data.Corpus(args.data, args.train_override)
+corpus = data.Corpus(args.data, args.train_override, args.valid_override)
 
 eval_batch_size = 10
 test_batch_size = 1

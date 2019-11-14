@@ -25,7 +25,7 @@ class Dictionary(object):
 
 
 class Corpus(object):
-    def __init__(self, path, train_override=None, vocab_extra=None):
+    def __init__(self, path, train_override=None, valid_override=None):
         self.dictionary = Dictionary()
         if os.path.exists(os.path.join(path, 'extra_vocab.txt')):
             self.tokenize(os.path.join(path, 'extra_vocab.txt')) #add extra vocab to dict first
@@ -33,7 +33,10 @@ class Corpus(object):
             self.train = self.tokenize(os.path.join(path, train_override))
         else:
             self.train = self.tokenize(os.path.join(path, 'train.txt'))
-        self.valid = self.tokenize(os.path.join(path, 'valid.txt'))
+        if(valid_override):
+            self.valid = self.tokenize(os.path.join(path, valid_override))
+        else:
+            self.valid = self.tokenize(os.path.join(path, 'valid.txt'))
         self.test = self.tokenize(os.path.join(path, 'test.txt'))
 
     def tokenize(self, path):
